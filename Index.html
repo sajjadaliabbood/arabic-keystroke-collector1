@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>منصة جمع بيانات ديناميكيات الكتابة | Bilingual Keystroke Collector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070d19;
+      --card-bg: rgba(15, 25, 45, 0.85);
+      --border-glow: rgba(0, 229, 255, 0.25);
+      --cyan: #00e5ff;
+      --cyan-hover: #00b8d4;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Tajawal', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top right, #0f203d, var(--bg-dark) 60%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 820px;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 229, 255, 0.08);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 1.6rem;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    /* Progress Bar */
+    .progress-wrapper {
+      margin-bottom: 28px;
+    }
+
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .progress-steps span.active {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7, var(--cyan));
+      transition: width 0.4s ease;
+    }
+
+    /* Form Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      background: rgba(7, 13, 25, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+    }
+
+    /* Target Prompt Box */
+    .target-box {
+      background: rgba(0, 229, 255, 0.06);
+      border-right: 4px solid var(--cyan);
+      padding: 16px 18px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 1.15rem;
+      line-height: 1.8;
+      user-select: none; /* منع التظليل والنسخ */
+    }
+
+    .target-box.ltr {
+      direction: ltr;
+      text-align: left;
+      border-right: none;
+      border-left: 4px solid var(--cyan);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    textarea.typing-area {
+      width: 100%;
+      min-height: 130px;
+      resize: none;
+      font-size: 1.1rem;
+      line-height: 1.7;
+    }
+
+    textarea.typing-area.ltr {
+      direction: ltr;
+      text-align: left;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px 10px;
+      border-radius: 6px;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #0284c7, var(--cyan));
+      color: #04101e;
+      border: none;
+      padding: 13px 26px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+      transition: transform 0.15s, opacity 0.2s;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      margin-top: 12px;
+    }
+
+    .step-section {
+      display: none;
+    }
+
+    .step-section.active {
+      display: block;
+      animation: fadeIn 0.35s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-top: 16px;
+      font-size: 0.92rem;
+      display: none;
+    }
+
+    .alert.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+    }
+
+    .alert.success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--success);
+      color: #6ee7b7;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>مختبر قياس ديناميكيات الكتابة (Keystroke Dynamics)</h1>
+    <p>منصة بحثية لجمع أنماط الإيقاع الحركي للكتابة الثابتة والحرة باللغتين العربية والإنجليزية</p>
+  </div>
+
+  <!-- شريط التقدم -->
+  <div class="progress-wrapper">
+    <div class="progress-steps">
+      <span id="lbl-0" class="active">1. البيانات</span>
+      <span id="lbl-1">2. عربي ثابت</span>
+      <span id="lbl-2">3. إنجليزي ثابت</span>
+      <span id="lbl-3">4. عربي حر</span>
+      <span id="lbl-4">5. إنجليزي حر</span>
+      <span id="lbl-5">6. الإرسال</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- المرحلة 0: البيانات الوصفية للمشارك -->
+  <div class="step-section active" id="step-0">
+    <div class="grid-2">
+      <div class="form-group">
+        <label>رمز أو اسم المشارك (Participant ID) *</label>
+        <input type="text" id="participantId" placeholder="مثال: P001 أو Ali_99" required />
+      </div>
+      <div class="form-group">
+        <label>رقم الجلسة (Session Number) *</label>
+        <select id="sessionNum">
+          <option value="1">الجلسة الأولى (Session 1)</option>
+          <option value="2">الجلسة الثانية (Session 2)</option>
+          <option value="3">الجلسة الثالثة (Session 3)</option>
+          <option value="4">الجلسة الرابعة (Session 4)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>الجنس (Gender)</label>
+        <select id="gender">
+          <option value="Male">ذكر (Male)</option>
+          <option value="Female">أنثى (Female)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>الفئة العمرية (Age Group)</label>
+        <select id="ageGroup">
+          <option value="18-24">18 - 24 سنة</option>
+          <option value="25-34" selected>25 - 34 سنة</option>
+          <option value="35-44">35 - 44 سنة</option>
+          <option value="45+">45 سنة فأكثر</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>اليد المفضلة في الكتابة (Handedness)</label>
+        <select id="handedness">
+          <option value="Right">أيمن (Right-handed)</option>
+          <option value="Left">أعسر (Left-handed)</option>
+          <option value="Both">كلتا اليدين بالتساوي</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>أسلوب الكتابة (Typing Style)</label>
+        <select id="typingStyle">
+          <option value="Two_Hands_Touch">اللمس السريع بكلتا اليدين دون النظر</option>
+          <option value="Two_Hands_Visual">بكلتا اليدين مع النظر للوحة المفاتيح</option>
+          <option value="One_Hand_Or_Thumbs">بيد واحدة / إبهامي الهاتف</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" onclick="startExperiment()">بدء جلسة القياس</button>
+  </div>
+
+  <!-- المرحلة 1: عربي ثابت -->
+  <div class="step-section" id="step-1">
+    <label style="display:block; margin-bottom:10px;">المهمة الأولى: اكتب الجملة العربية التالية بدقة وبسرعتك الطبيعية (يُمنع النسخ واللصق):</label>
+    <div class="target-box" id="target-ar-fixed">نص حكيم له سر قاطع وذو شأن عظيم مكتوب على ثوب أخضر ومغلف بجلد أزرق</div>
+    <textarea class="typing-area" id="input-AR_FIXED" placeholder="ابدأ الكتابة هنا..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="meta-bar">
+      <span>عدد الأحرف: <strong id="count-AR_FIXED">0</strong> / 73</span>
+      <span class="badge" id="status-AR_FIXED">اكتب النص أعلاه للمتابعة</span>
+    </div>
+    <button class="btn" id="btn-AR_FIXED" disabled onclick="goToStep(2)">التالي: النص الإنجليزي الثابت</button>
+  </div>
+
+  <!-- المرحلة 2: إنجليزي ثابت -->
+  <div class="step-section" id="step-2">
+    <label style="display:block; margin-bottom:10px;">المهمة الثانية: اكتب الجملة الإنجليزية القياسية التالية بدقة (حول لوحة المفاتيح للإنجليزية):</label>
+    <div class="target-box ltr" id="target-en-fixed">The quick brown fox jumps over the lazy dog near the bank of the river.</div>
+    <textarea class="typing-area ltr" id="input-EN_FIXED" placeholder="Start typing here in English..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="meta-bar">
+      <span>Characters: <strong id="count-EN_FIXED">0</strong> / 73</span>
+      <span class="badge" id="status-EN_FIXED">Type the sentence above</span>
+    </div>
+    <button class="btn" id="btn-EN_FIXED" disabled onclick="goToStep(3)">التالي: الكتابة العربية الحرة</button>
+  </div>
+
+  <!-- المرحلة 3: عربي حر -->
+  <div class="step-section" id="step-3">
+    <label style="display:block; margin-bottom:10px;">المهمة الثالثة (تعبير حر بالعربية): صف بإيجاز مجال عملك أو دراستك، أو تحدث عن يومك المعتاد (150 حرفاً على الأقل):</label>
+    <textarea class="typing-area" id="input-AR_FREE" placeholder="اكتب فقرة من تأليفك باللغة العربية هنا..." autocomplete="off" spellcheck="false"></textarea>
+    <div class="meta-bar">
+      <span>الأحرف المكتوبة: <strong id="count-AR_FREE">0</strong> / 150 (الحد الأدنى)</span>
+      <span class="badge" id="status-AR_FREE">متبقي 150 حرفاً</span>
+    </div>
+    <button class="btn" id="btn-AR_FREE" disabled onclick="goToStep(4)">التالي: الكتابة الإنجليزية الحرة</button>
+  </div>
+
+  <!-- المرحلة 4: إنجليزي حر -->
+  <div class="step-section" id="step-4">
+    <label style="display:block; margin-bottom:10px;">المهمة الرابعة (تعبير حر بالإنجليزية): اكتب فقرة قصيرة من تأليفك باللغة الإنجليزية حول تقنية تفضلها أو روتينك اليومي (150 حرفاً على الأقل):</label>
+    <textarea class="typing-area ltr" id="input-EN_FREE" placeholder="Write a short paragraph in English from your own thoughts..." autocomplete="off" spellcheck="false"></textarea>
+    <div class="meta-bar">
+      <span>Characters: <strong id="count-EN_FREE">0</strong> / 150 (Minimum)</span>
+      <span class="badge" id="status-EN_FREE">150 chars remaining</span>
+    </div>
+    <button class="btn" id="btn-EN_FREE" disabled onclick="finishAndSubmit()">إنهاء الجلسة وإرسال البيانات</button>
+  </div>
+
+  <!-- المرحلة 5: الإرسال والتصدير -->
+  <div class="step-section" id="step-5">
+    <div style="text-align:center; padding: 20px 0;">
+      <h2 style="color: var(--cyan); margin-bottom: 10px;" id="finalTitle">جاري إرسال البيانات إلى قاعدة البيانات السحابية...</h2>
+      <p style="color: var(--text-muted); margin-bottom: 20px;" id="finalSummary"></p>
+      <div class="alert success" id="successBox">تم حفظ جميع سجلات ضغطات المفاتيح بنجاح في Google Sheets. شكراً لمساهمتك البحثية!</div>
+      <div class="alert error" id="errorBox">تعذر الاتصال بالسحابة. يرجى تحميل نسخة البيانات محلياً عبر الزر أدناه وإرسالها للباحث.</div>
+      
+      <button class="btn btn-secondary" onclick="downloadCSV()">تحميل نسخة احتياطية بصيغة CSV</button>
+      <button class="btn" style="margin-top:12px;" onclick="location.reload()">بدء جلسة لمشارك جديد</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ضع رابط Google Apps Script Web App هنا
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0MYOf6OxCo2MbWIYintTJzCYWCD-ABow7_8JJ9aXyd3PfX5Mm4fGN3Nxsc5Jkhr72/exec";
+
+  let keystrokeEvents = [];
+  let participantMeta = {};
+
+  // دالة الكشف التلقائي عن نوع الجهاز
+  function detectDeviceType() {
+    const ua = navigator.userAgent;
+    if (/tablet|ipad|playbook|silk/i.test(ua)) return "Tablet";
+    if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated/i.test(ua)) return "Mobile_Touchscreen";
+    return "Desktop_Laptop_Physical";
+  }
+
+  // تحديث شريط التقدم
+  function updateProgress(stepIndex) {
+    const percent = (stepIndex / 5) * 100;
+    document.getElementById("progressFill").style.width = percent + "%";
+    for (let i = 0; i <= 5; i++) {
+      const lbl = document.getElementById("lbl-" + i);
+      if (i <= stepIndex) lbl.classList.add("active");
+      else lbl.classList.remove("active");
+    }
+  }
+
+  function goToStep(stepIndex) {
+    document.querySelectorAll(".step-section").forEach(el => el.classList.remove("active"));
+    document.getElementById("step-" + stepIndex).classList.add("active");
+    updateProgress(stepIndex);
+  }
+
+  function startExperiment() {
+    const pid = document.getElementById("participantId").value.trim();
+    if (!pid) {
+      alert("يرجى إدخال رمز أو اسم المشارك قبل البدء.");
+      return;
+    }
+
+    participantMeta = {
+      participant_id: pid,
+      session_num: document.getElementById("sessionNum").value,
+      gender: document.getElementById("gender").value,
+      age_group: document.getElementById("ageGroup").value,
+      handedness: document.getElementById("handedness").value,
+      typing_style: document.getElementById("typingStyle").value,
+      device_type: detectDeviceType(),
+      user_agent: navigator.userAgent,
+      screen_res: `${window.screen.width}x${window.screen.height}`
+    };
+
+    goToStep(1);
+    document.getElementById("input-AR_FIXED").focus();
+  }
+
+  // دالة حساب تشابه النصوص (Levenshtein Similarity) للتحقق من الجمل الثابتة
+  function getSimilarity(s1, s2) {
+    s1 = s1.trim().replace(/\s+/g, ' ');
+    s2 = s2.trim().replace(/\s+/g, ' ');
+    if (s1 === s2) return 1.0;
+    const len1 = s1.length, len2 = s2.length;
+    if (len1 === 0 || len2 === 0) return 0;
+    const matrix = Array.from({ length: len1 + 1 }, () => Array(len2 + 1).fill(0));
+    for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+      }
+    }
+    return 1.0 - matrix[len1][len2] / Math.max(len1, len2);
+  }
+
+  // ربط مستمعي الأحداث (Listeners) بمربعات الكتابة الأربعة
+  const stages = [
+    { id: "AR_FIXED", type: "fixed", targetId: "target-ar-fixed", minSim: 0.88 },
+    { id: "EN_FIXED", type: "fixed", targetId: "target-en-fixed", minSim: 0.88 },
+    { id: "AR_FREE",  type: "free",  minLen: 150 },
+    { id: "EN_FREE",  type: "free",  minLen: 150 }
+  ];
+
+  stages.forEach(stage => {
+    const textarea = document.getElementById("input-" + stage.id);
+    const btn = document.getElementById("btn-" + stage.id);
+    const countEl = document.getElementById("count-" + stage.id);
+    const statusEl = document.getElementById("status-" + stage.id);
+
+    // منع اللصق أو الإفلات
+    textarea.addEventListener("paste", e => e.preventDefault());
+    textarea.addEventListener("drop", e => e.preventDefault());
+
+    // تسجيل حدث الضغط (KeyDown)
+    textarea.addEventListener("keydown", e => {
+      if (e.repeat) return; // تجاهل التكرار التلقائي عند استمرار الضغط المطول
+      keystrokeEvents.push({
+        stage: stage.id,
+        event_type: "keydown",
+        key_char: e.key,
+        physical_code: e.code || "Unidentified",
+        timestamp_ms: performance.now().toFixed(3)
+      });
+    });
+
+    // تسجيل حدث الرفع (KeyUp)
+    textarea.addEventListener("keyup", e => {
+      keystrokeEvents.push({
+        stage: stage.id,
+        event_type: "keyup",
+        key_char: e.key,
+        physical_code: e.code || "Unidentified",
+        timestamp_ms: performance.now().toFixed(3)
+      });
+    });
+
+    // التحقق من اكتمال الشرط لتفعيل زر التالي
+    textarea.addEventListener("input", () => {
+      const val = textarea.value;
+      countEl.textContent = val.length;
+
+      if (stage.type === "fixed") {
+        const targetText = document.getElementById(stage.targetId).textContent;
+        const sim = getSimilarity(val, targetText);
+        if (sim >= stage.minSim) {
+          btn.disabled = false;
+          statusEl.textContent = `ممتاز! دقة المطابقة ${(sim * 100).toFixed(0)}%`;
+          statusEl.style.color = "#10b981";
+        } else {
+          btn.disabled = true;
+          statusEl.textContent = `دقة المطابقة الحالية: ${(sim * 100).toFixed(0)}% (المطلوب 88%+)`;
+          statusEl.style.color = "#00e5ff";
+        }
+      } else {
+        const remaining = Math.max(0, stage.minLen - val.trim().length);
+        if (remaining === 0) {
+          btn.disabled = false;
+          statusEl.textContent = "تم استيفاء الحد الأدنى بنجاح";
+          statusEl.style.color = "#10b981";
+        } else {
+          btn.disabled = true;
+          statusEl.textContent = `متبقي ${remaining} حرفاً`;
+          statusEl.style.color = "#00e5ff";
+        }
+      }
+    });
+  });
+
+  // إرسال البيانات إلى Google Sheets
+  async function finishAndSubmit() {
+    goToStep(5);
+    document.getElementById("finalSummary").textContent = 
+      `المشارك: ${participantMeta.participant_id} | إجمالي الأحداث المسجلة: ${keystrokeEvents.length} حدث ضغط/رفع`;
+
+    const payload = {
+      metadata: participantMeta,
+      events: keystrokeEvents
+    };
+
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors", // لتجاوز قيود CORS في متصفحات الويب مع Apps Script
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      document.getElementById("finalTitle").textContent = "اكتملت الجلسة بنجاح!";
+      document.getElementById("successBox").style.display = "block";
+    } catch (err) {
+      document.getElementById("finalTitle").textContent = "حدث خطأ في الإرسال السحابي";
+      document.getElementById("errorBox").style.display = "block";
+    }
+  }
+
+  // تصدير ملف CSV محلي احتياطي
+  function downloadCSV() {
+    let csv = "\uFEFFParticipant_ID,Session_Num,Device_Type,Typing_Style,Stage,Event_Type,Key_Char,Physical_Code,Timestamp_ms\n";
+    keystrokeEvents.forEach(ev => {
+      const safeKey = `"${String(ev.key_char).replace(/"/g, '""')}"`;
+      csv += `${participantMeta.participant_id},${participantMeta.session_num},${participantMeta.device_type},${participantMeta.typing_style},${ev.stage},${ev.event_type},${safeKey},${ev.physical_code},${ev.timestamp_ms}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Keystrokes_${participantMeta.participant_id}_S${participantMeta.session_num}.csv`;
+    a.click();
+  }
+</script>
+
+</body>
+</html>
